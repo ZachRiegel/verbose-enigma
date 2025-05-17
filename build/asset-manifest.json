@@ -1,0 +1,14 @@
+{
+  "files": {
+    "main.css": "/solid-octo-spork/static/css/main.9fabbac4.css",
+    "main.js": "/solid-octo-spork/static/js/main.233d1bbb.js",
+    "module.wasm": "/solid-octo-spork/94c6f07a6d0b013aef90.module.wasm",
+    "index.html": "/solid-octo-spork/index.html",
+    "main.9fabbac4.css.map": "/solid-octo-spork/static/css/main.9fabbac4.css.map",
+    "main.233d1bbb.js.map": "/solid-octo-spork/static/js/main.233d1bbb.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.9fabbac4.css",
+    "static/js/main.233d1bbb.js"
+  ]
+}
