@@ -198,7 +198,7 @@ const GameView = ({gameState}: { gameState: GameState }) => {
       } else {
         setCameraPosition((previous) => ({
           ...previous,
-          zoom: previous.zoom - e.deltaY * 0.007,
+          zoom: previous.zoom - e.deltaY * 0.0003,
         }));
       }
     },

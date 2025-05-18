@@ -1,14 +1,14 @@
 {
   "files": {
-    "main.css": "/solid-octo-spork/static/css/main.9fabbac4.css",
-    "main.js": "/solid-octo-spork/static/js/main.233d1bbb.js",
-    "module.wasm": "/solid-octo-spork/94c6f07a6d0b013aef90.module.wasm",
-    "index.html": "/solid-octo-spork/index.html",
-    "main.9fabbac4.css.map": "/solid-octo-spork/static/css/main.9fabbac4.css.map",
-    "main.233d1bbb.js.map": "/solid-octo-spork/static/js/main.233d1bbb.js.map"
+    "main.css": "/verbose-enigma/static/css/main.68b83ff1.css",
+    "main.js": "/verbose-enigma/static/js/main.0754a4de.js",
+    "module.wasm": "/verbose-enigma/94c6f07a6d0b013aef90.module.wasm",
+    "index.html": "/verbose-enigma/index.html",
+    "main.68b83ff1.css.map": "/verbose-enigma/static/css/main.68b83ff1.css.map",
+    "main.0754a4de.js.map": "/verbose-enigma/static/js/main.0754a4de.js.map"
   },
   "entrypoints": [
-    "static/css/main.9fabbac4.css",
-    "static/js/main.233d1bbb.js"
+    "static/css/main.68b83ff1.css",
+    "static/js/main.0754a4de.js"
   ]
 }
