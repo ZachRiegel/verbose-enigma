@@ -1,6 +1,7 @@
-import React, { useRef, useState, useCallback, useEffect } from "react";
-import { GameState } from "src/types";
+import React, {useRef, useState, useCallback, useEffect} from "react";
+import {GameState} from "src/types";
 import styled from "@emotion/styled";
+import _ from "lodash";
 
 const Camera = styled.div`
   width: 100vw;
@@ -13,6 +14,26 @@ const Camera = styled.div`
   outline: none;
 `;
 
+enum Quadrant {
+  topLeft,
+  topRight,
+  bottomRight,
+  bottomLeft
+}
+
+const QUADRANT_TO_CAMERA_UNIT = {
+  [Quadrant.topLeft]: [0, 0],
+  [Quadrant.topRight]: [1, 0],
+  [Quadrant.bottomRight]: [1, 1],
+  [Quadrant.bottomLeft]: [0, 1],
+}
+
+const makeCubicBezier = (p0: number, p1: number, p2: number, p3: number) => (t: number) =>
+  (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + (1 - t) * t ** 2 * p2 + t ** 3 * p3;
+
+const cameraEasing = makeCubicBezier(.17, .67, .7, .14);
+const AVERAGE_CAMERA_SPEED = 200;
+
 const Table = styled.div`
   display: grid;
   background-color: var(--black);
@@ -23,9 +44,9 @@ const Table = styled.div`
     ".   .     tbs .   . .   .   .   ."
     ".   p1d   .   p1c . p2d .   p2c   ."
     ".   .     .   .   c .   .   .   ."
-    ".   p3a   .   p3b . p4a .   p4b ."
+    ".   p4a   .   p4b . p3a .   p3b ."
     ".   .     .   .   . .   tbe .   ."
-    ".   p3d   .   p3c . p4d .   p4c ."
+    ".   p4d   .   p4c . p3d .   p3c ."
     ".   .     .   .   . .   .   .   obe";
   grid-template-columns: 1cqw 74cqw 2cqw 22cqw 2cqw 22cqw 2cqw 74cqw 1cqw; // 200
   grid-template-rows: 1cqw 1fr max-content max-content 2cqw max-content max-content 1fr 1cqw; // 94
@@ -53,7 +74,15 @@ type CameraPosition = {
   zoom: number; // 0.5 to 1
 };
 
-const GameView = ({ gameState }: { gameState: GameState }) => {
+declare global {
+  interface Window {
+    isTrackpad: boolean;
+  }
+}
+
+window.isTrackpad = true; // Make users specify this in their personal config at some point
+
+const GameView = ({gameState}: { gameState: GameState }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [cameraPosition, _setCameraPosition] = useState<CameraPosition>({
     translateX: 0,
@@ -64,18 +93,28 @@ const GameView = ({ gameState }: { gameState: GameState }) => {
   const cameraRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
+  const lastKnownQuadrant = useRef<Quadrant>(Quadrant.topLeft);
+  const startingZoomPosition = useRef<CameraPosition | null>(null);
+
+  const updateQuadrant = useCallback(_.memoize(
+    (quadrant: Quadrant) =>
+      () => {
+        if (!startingZoomPosition.current) lastKnownQuadrant.current = quadrant
+      }), []);
+
   const setCameraPosition = useCallback(
     (func: (previous: CameraPosition) => CameraPosition) => {
       _setCameraPosition((previous) => {
         const desiredPosition = func(previous);
+        let targetZoom = Math.max(0.5, Math.min(1, desiredPosition.zoom));
 
         if (!cameraRef.current || !tableRef.current) return previous;
-        const { offsetWidth: cameraWidth, offsetHeight: cameraHeight } =
+        const {offsetWidth: cameraWidth, offsetHeight: cameraHeight} =
           cameraRef.current;
-        const { offsetWidth: baseTableWidth, offsetHeight: baseTableHeight } =
+        const {offsetWidth: baseTableWidth, offsetHeight: baseTableHeight} =
           tableRef.current;
-        const tableWidth = baseTableWidth * desiredPosition.zoom;
-        const tableHeight = baseTableHeight * desiredPosition.zoom;
+        const tableWidth = baseTableWidth * targetZoom;
+        const tableHeight = baseTableHeight * targetZoom;
 
         const minX = Math.min(0, cameraWidth - tableWidth);
         const maxX = 0;
@@ -84,19 +123,30 @@ const GameView = ({ gameState }: { gameState: GameState }) => {
 
         let targetX = desiredPosition.translateX;
         let targetY = desiredPosition.translateY;
-        let targetZoom = Math.max(0.5, Math.min(1, desiredPosition.zoom));
 
         if (
-          targetZoom !== previous.zoom &&
+          targetZoom > previous.zoom &&
           targetX === previous.translateX &&
           targetY === previous.translateY
         ) {
-          // When zooming,
+          if (!startingZoomPosition.current) startingZoomPosition.current = previous;
+          // If we're zooming in and no translation is requested, try to focus
+          // on the current selected quadrant
+          const endingLocationX = QUADRANT_TO_CAMERA_UNIT[lastKnownQuadrant.current][0] * cameraWidth;
+          const startEndXDifference = endingLocationX - (-1 * startingZoomPosition.current.translateX);
+          const xMod = cameraEasing((targetZoom - .5) * 2) * startEndXDifference;
+          targetX -= xMod;
 
-          const percentDiff = (1 - targetZoom / previous.zoom) / 2;
-          targetX += tableWidth * percentDiff;
-          targetY += tableHeight * percentDiff;
-        }
+          const endingLocationY = QUADRANT_TO_CAMERA_UNIT[lastKnownQuadrant.current][1] * cameraWidth;
+          const startEndYDifference = endingLocationY -
+            (-1 * startingZoomPosition.current.translateY) +
+            (QUADRANT_TO_CAMERA_UNIT[lastKnownQuadrant.current][1] === 1
+                ? (tableHeight - .51 * cameraWidth)
+                : 0
+            );
+          const yMod = cameraEasing((targetZoom - .5) * 2) * startEndYDifference;
+          targetY -= yMod;
+        } else startingZoomPosition.current = null;
 
         return {
           translateX: Math.max(minX, Math.min(maxX, targetX)),
@@ -128,11 +178,10 @@ const GameView = ({ gameState }: { gameState: GameState }) => {
     setIsDragging(false);
   }, []);
 
-  const isTrackpad = true; // Make users specify this in their personal config at some point
   const handleWheelEvent = useCallback(
     (e: WheelEvent) => {
       e.preventDefault();
-      if (isTrackpad) {
+      if (window.isTrackpad) {
         // Cntrl meta indicates pinch to zoom
         if (e.ctrlKey) {
           setCameraPosition((previous) => ({
@@ -147,16 +196,19 @@ const GameView = ({ gameState }: { gameState: GameState }) => {
           }));
         }
       } else {
-        // do mouse things
+        setCameraPosition((previous) => ({
+          ...previous,
+          zoom: previous.zoom - e.deltaY * 0.007,
+        }));
       }
     },
-    [isTrackpad, setCameraPosition],
+    [setCameraPosition],
   );
 
   useEffect(() => {
     const camera = cameraRef.current;
     if (!camera) return;
-    camera.addEventListener("wheel", handleWheelEvent, { passive: false });
+    camera.addEventListener("wheel", handleWheelEvent, {passive: false});
     return () => {
       camera.removeEventListener("wheel", handleWheelEvent);
     };
@@ -179,30 +231,34 @@ const GameView = ({ gameState }: { gameState: GameState }) => {
         }}
       >
         <PlayerBoard
+          onMouseMove={updateQuadrant(Quadrant.topLeft)}
           style={{
             ["--grid-area" as any]: "p1a / p1a / p1c / p1c",
             ["--playerColor" as any]: "var(--blue)",
           }}
         />
         <PlayerBoard
+          onMouseMove={updateQuadrant(Quadrant.topRight)}
           style={{
             ["--grid-area" as any]: "p2a / p2a / p2c / p2c",
             ["--playerColor" as any]: "var(--red)",
           }}
         />
         <PlayerBoard
+          onMouseMove={updateQuadrant(Quadrant.bottomRight)}
           style={{
             ["--grid-area" as any]: "p3a / p3a / p3c / p3c",
             ["--playerColor" as any]: "var(--yellow)",
           }}
         />
         <PlayerBoard
+          onMouseMove={updateQuadrant(Quadrant.bottomLeft)}
           style={{
             ["--grid-area" as any]: "p4a / p4a / p4c / p4c",
             ["--playerColor" as any]: "var(--green)",
           }}
         />
-        <Tablet />
+        <Tablet/>
       </Table>
     </Camera>
   );
