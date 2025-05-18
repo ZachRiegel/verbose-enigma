@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/verbose-enigma/static/css/main.68b83ff1.css",
-    "main.js": "/verbose-enigma/static/js/main.0754a4de.js",
+    "main.js": "/verbose-enigma/static/js/main.313cbd39.js",
     "module.wasm": "/verbose-enigma/94c6f07a6d0b013aef90.module.wasm",
     "index.html": "/verbose-enigma/index.html",
     "main.68b83ff1.css.map": "/verbose-enigma/static/css/main.68b83ff1.css.map",
-    "main.0754a4de.js.map": "/verbose-enigma/static/js/main.0754a4de.js.map"
+    "main.313cbd39.js.map": "/verbose-enigma/static/js/main.313cbd39.js.map"
   },
   "entrypoints": [
     "static/css/main.68b83ff1.css",
-    "static/js/main.0754a4de.js"
+    "static/js/main.313cbd39.js"
   ]
 }

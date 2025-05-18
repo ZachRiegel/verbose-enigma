@@ -32,7 +32,6 @@ const makeCubicBezier = (p0: number, p1: number, p2: number, p3: number) => (t: 
   (1 - t) ** 3 * p0 + 3 * (1 - t) ** 2 * t * p1 + (1 - t) * t ** 2 * p2 + t ** 3 * p3;
 
 const cameraEasing = makeCubicBezier(.17, .67, .7, .14);
-const AVERAGE_CAMERA_SPEED = 200;
 
 const Table = styled.div`
   display: grid;
@@ -50,6 +49,7 @@ const Table = styled.div`
     ".   .     .   .   . .   .   .   obe";
   grid-template-columns: 1cqw 74cqw 2cqw 22cqw 2cqw 22cqw 2cqw 74cqw 1cqw; // 200
   grid-template-rows: 1cqw 1fr max-content max-content 2cqw max-content max-content 1fr 1cqw; // 94
+  transform: translateX(var(--translateX) px) translateY(var(--translateY) px) scale(var(--scale));
   transform-origin: top left;
 `;
 
@@ -198,7 +198,7 @@ const GameView = ({gameState}: { gameState: GameState }) => {
       } else {
         setCameraPosition((previous) => ({
           ...previous,
-          zoom: previous.zoom - e.deltaY * 0.0003,
+          zoom: previous.zoom - e.deltaY * 0.0004,
         }));
       }
     },
@@ -227,7 +227,9 @@ const GameView = ({gameState}: { gameState: GameState }) => {
         ref={tableRef}
         style={{
           cursor: isDragging ? "grab" : "default",
-          transform: `translateX(${cameraPosition.translateX}px)  translateY(${cameraPosition.translateY}px) scale(${cameraPosition.zoom})`,
+          ['--translateX' as any]: cameraPosition.translateX,
+          ['--translateY' as any]: cameraPosition.translateY,
+          ['--scale' as any]: cameraPosition.zoom,
         }}
       >
         <PlayerBoard
